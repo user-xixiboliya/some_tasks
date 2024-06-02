@@ -1,0 +1,15 @@
+//课程序号    课程名称    学分    先修课程号
+
+C01 gaodengshuxue 2 
+C02 lisanshuxue 3 C01
+C03 CS&AI 4 C01 C02
+C04 xiandaiwuli1 3 C01
+C05 xiandaiwuli2 2 C04 C03
+C06 jisuanjiwangluo 3 C11
+C07 shuzixinhaochuli 4 C05 C03
+C08 bianyiyuanli 4 C03 C06
+C09 chengxusheji 7 
+C10 shujujiegou 5 C09
+C11 tixijiegou 2 C09
+C12  jisuanjizuchengyuanli 3 C10 C09 C01
+ 
