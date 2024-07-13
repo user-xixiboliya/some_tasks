@@ -1,0 +1,933 @@
+\documentclass[12pt,a4paper]{nmmcm}
+\usepackage{booktabs} % 导入booktabs宏包  
+\usepackage{array} % 导入array宏包来定义列宽和对齐方式
+\usepackage{ctex}
+\documentclass{article}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{listings}
+\usepackage{booktabs,colortbl}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{indentfirst}
+\usepackage[utf8]{inputenc}
+\usepackage{caption}
+\usepackage{xurl}
+\usepackage{amsmath}  
+\usepackage{longtable}
+\setmainfont{Times New Roman}
+\setmonofont[
+    Path=fonts/,
+    UprightFont = *-Regular,
+    BoldFont = *-Bold,
+    ItalicFont = *-Italic
+]{UbuntuMono}
+\usepackage{lipsum}
+\usepackage{paralist}
+\let\itemize\compactitem
+\let\enditemize\endcompactitem
+\let\enumerate\compactenum
+\let\endenumerate\endcompactenum
+\let\description\compactdesc
+\let\enddescription\endcompactdesc
+\lstset{
+    basicstyle=\ttfamily,
+    numbers=left,
+    numberstyle=\tiny,
+    stepnumber=1,
+    numbersep=5pt,
+    backgroundcolor=\color{white},
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    frame=single,
+    rulecolor=\color{black},
+    tabsize=2,
+    captionpos=b,
+    breaklines=true,
+    breakatwhitespace=false,
+    title=\lstname,
+    keywordstyle=\color{blue},
+    commentstyle=\color{dkgreen},
+    stringstyle=\color{mauve},
+}
+\setlength\abovedisplayskip{5pt}
+\setlength\belowdisplayskip{-8pt}
+\setlength{\parskip}{0.1em}
+
+\newcommand\wordc[1]{\textbf{#1}}
+\renewcommand{\appendixtocname}{附\quad录}
+\renewcommand{\appendices}{\hspace{-2em}{\sanhao\HEI {\bf 附~~~录}}}
+\colorlet{tableheadcolor}{gray!25} % Table header colour = 25% gray
+\newcommand{\headcol}{\rowcolor{tableheadcolor}}
+
+\title{\textcolor{black}{基于Lasso回归模型与BP神经网络模型的信用评分体系建立与等级划分}}
+\date{}
+
+\usepackage[font=small,labelfont={bf,sf},tableposition=top]{caption}
+
+
+\begin{document}
+\begin{center}
+    \begin{tabular}{|c|c|}
+    \hline
+    队伍编号 & GS24626 \\
+    \hline
+    题目 & C \\
+    \hline
+    \end{tabular}
+\end{center}
+
+\begin{abstract}
+\input{Abstract}
+
+
+
+\thispagestyle{empty}
+\begin{center}
+    \Large 
+\end{center}
+\end{abstract}
+
+\maketitle
+\renewcommand{\contentsname}{\centerline{\sanhao\bfseries\HEI 目\quad 录}}
+%\thispagestyle{empty}
+%{\song\xiaosihao
+\tableofcontents
+%}
+
+\newpage
+\setcounter{page}{1}
+
+\section{问题重述}
+\subsection{问题背景}
+信用风险识别是金融行业以及个体借贷过程中至关重要的一个部分。通过分析借款方的个人和财务信息，评价其是否能够和愿意偿还贷款，进而降低贷款机构风险暴露的可能性。
+
+随着大数据技术的快速发展，信用风险识别获得了更多数据来源和分析手段，但是在信用风险识别的研究中也存在着较多的问题，例如：在对于指标的筛选中，对于影响程度最大的指标选定以及克服多重共线性和过度拟合等问题是几大难点；在实际情况下，往往会出现违约评价少、非违约评价多的问题，进而导致对违约样本识别不足的问题。同时，平衡模型的预测准确性和可解释性也是一大难点；在信用等级划分中，在确保等级划分的鲁棒性和普适性的情况下，对于选择恰当的阈值、聚类模型以及非线性规划模型将信用得分映射到信用等级，求解信用等级划分结果又是一大难点。
+\subsection{问题要求}
+\setlength{\parindent}{2em}
+题目给出了UCI公开的德国信用数据集以及澳大利亚信用数据集，其中包含了个体的个人以及财务等信息指标，现要求我们通过建立数学模型解决如下问题：
+\\\hspace*{2em}问题一：选择合适的模型，减轻高维数据对于信用风险评价带来的评价指标反应信息冗余的问题，提升信用风险识别准确性和可解释性。
+\\\hspace*{2em}问题二：选择合适的信用评分模型，克服传统线性加权方法无法准确刻画指标与风险之间非线性关系的问题以及减少样本分布不均匀带来的模型识别过度和不足的问题。
+\\\hspace*{2em}问题三：利用附件1和附件2中的数据，自建信用评分模型，并将所建模型和决策树、K最近邻、随机森林以及支持向量机等多种现有分类模型进行对比分析，进而判断该信用评分模型的合理性和准确性，并填写相关表格。
+\\\hspace*{2em}问题四：以“信用等级越高、信用风险越低”为信用等级划分标准，构建非线性规划模型，在德国信用数据集上划分个体信用等级。
+
+
+\section{问题分析}
+\subsection{问题一的分析}
+ \textbf{对于问题一，}题目中附件1给出了德国信用数据集的相关信息，我们注意到有X1-X24共24个指标，由于高维数据易带来评价指标反应信息冗余的情况，我们考虑对这24个指标进行降维。首先，我们先进行KMO检验和Bartlett球形度检验，通常认为在KMO值大于0.6时适宜使用主成分分析法。接着，我们采用Lasso回归模型，对24个指标进行筛选，得到不同的权重系数，从而剔除去相关性较弱的一些指标，达到信用风险评价的目标。
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{l.png}
+    \caption{Lasso回归模型求解流程图}
+    \label{fig:enter-label}
+\end{figure}
+
+\subsection{问题二的分析}
+ \textbf{对于问题二，}我们注意到本题要求我们建立一个个体信用评分模型来计算德国信用数据集中的个人信用得分。因此，我们首先应进行数据的预处理，去除部分冗余指标后再对剩余指标进行归一化处理。接着我们使用BP神经网络模型，通过多个神经元和层次结构以及反向传播算法得到信用评分模型，对数据进行加权处理后得到较为简明易懂的分数值，达到信用评分的目的。
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{8.png}
+    \caption{BP神经网络原理结构图}
+    \label{fig:enter-label}
+\end{figure}
+\subsection{问题三的分析}
+\textbf{对于问题三，}我们需要将自行建立的信用评分模型和给出的随机森林（RF）、决策树（DT）、K最近邻（KNN）以及支持向量机（SVM）等分类模型进行比较。首先我们先利用SPSS软件对自建模型进行分析，求出Accuracy、AUC、Type1-error和Type2-error等参数，再调整为其他模型进行分析，通过各项参数的对比进行模型性能的对比。
+\subsection{问题四的分析}
+\textbf{对于问题四，}基于中华人民共和国金融行业标准(JR/T0030.2-2006)《信贷市场和银行间债券市场信用评级规范》，将德国信用数据集划分为9个等级包括AAA、AA、A、BBB、BB、B、CCC、CC 以及 C 级，进行多目标非线性规划对信用等级进行划分。$DIS$为违约与非违约客户平均信用得分的离散距离和，各信用等级对应的证据权重(weight of evidence,WOE)反映违约与非违约用户的个数关系，以最大化$WOE_{9}-WOE_{1}$以及$DIS$距离为目标函数进行双目标函数非线性规划，得到不同等级信用得分的划分区间，达到“信用等级越高、信用风险越低”的划分目的。
+\section{模型假设}
+\begin{enumerate}
+  \item 模型假设一：假设信用风险识别指标均为极大型指标；
+  \item 模型假设二：观察到X1-X24的指标类型可能有两类，因此我们假设X16-X24的指标和X1-X15的指标类型一致；
+\end{enumerate}
+
+\section{名词解释与符号说明}
+
+\subsection{名词解释与说明}
+\begin{enumerate}
+\item \wordc{鲁棒性：}模型或算法对异常值、噪声或不完全符合假设的数据的稳健性和可靠性。
+
+\item \wordc{阈值：}指一个界限值或临界点，用于决定模型预测结果的分类或决策。
+
+\item \wordc{信用风险评价：}信用风险评价是评估个人、公司或其他实体未来违约可能性的过程。
+
+\item \wordc{交叉验证：}一种评估机器学习模型泛化能力的统计技术，综合评估模型在不同数据子集上的表现。
+\item \wordc{噪声：}数据集中的不希望的随机或非随机波动。
+\end{enumerate}
+\subsection{主要符号与说明}
+%tab1
+\begin{table}[h]
+  \centering
+  \small
+  \begin{tabular}{p{60pt}<{\centering}|p{60pt}<{\centering}p{180pt}<{\raggedright}}
+   \hline
+   \headcol 序号 & 符号 & 符号说明 \\
+   \hline
+    1 & $x_{i,j}$ & $X_{i}$的各项指标 \\
+    2 & $Y_{i}$ & 第$i$人违约与否\\
+    3 & $n$ & $x_{i}$指标总个数 \\
+    4 & $\alpha_{i}$ & 拟合系数 \\
+    5 & $\epsilon_{i}$ & 无法观测且满足一定限制的扰动项\\
+    6 & $F_{j}$ & 隐含层输出量 \\
+    7 & $O_{k}$ & 输出层输出变量\\
+    8 & $G$ & $bp$神经网络激励系数\\
+    9 & $E$ & 单次$bp$神经网络的训练误差 \\
+    10 & $LOSS(ii)$ & 第$ii$次训练的训练集的误差和\\
+    11 & $inputn$ &  用于训练bp神经网络的输入训练集\\
+    12 &$PD_{j}$& 第 $j$ 人的违约概率\\
+    13 &$WOE_{e}$ & $e$信用等级对应的证据权重值\\
+    \hline
+  \end{tabular}
+  %\caption{符号与说明}
+  \label{symbol}
+\end{table}
+
+
+\section{模型的建立与求解}
+\subsection{问题一模型的建立和求解}
+\subsubsection{数据预处理}
+首先，对附件一的数据进行分析处理。附件一给出的是UCI公开的德国信用数据集，其中编号X1-X24表示个体的个人及财务等信息指标，间接反应个人信用风险。通过对数据的观察，我们发现数据没有缺失值和明显的异常值，可以认为所有数据是可分析的。
+
+但是高维数据往往会为信用风险评价带来评价指标反应信息冗余等问题，我们发现许多指标之间具有很强的相关性，我们可以采用基于特征重要性的方法，如Lasso回归与二分类概率单位回归，对原始数据进行处理，把不重要的特征的系数进行压缩，从而实现特征选择。
+\subsubsection{Lasso回归模型的建立与求解}
+对于这种高维多指标评价问题，一般会出现两个主要挑战：一是特征之间存在多重共线性，可能会使模型参数不稳定；二是有一些指标实际上对结果的贡献率不大，而使用传统的方法可能会出现过拟合的现象，干扰到模型的预测结果与模型本身的性能。我们要考虑是否可用主成分分析法，首先我们进行KMO检验和Bartlett的检验，检验结果如下：
+
+\begin{table}[ht]
+\centering
+\caption{KMO检验和Bartlett的检验}
+\label{tab:adf_results}
+\begin{tabular}{ccc}
+\hline
+KOM值& &0.516\\
+\hline
+ &近似卡方&4884.588\\
+Bartlett球形度检验&df&276\\
+ &P&0.000***\\
+ \hline
+\end{tabular}
+\smallskip
+\end{table}
+
+ 对于KMO值：0.8以上非常合适做主成分分析，0.7-0.8之间为一般适合，0.6-0.7之间不太适合，0.5-0.6之间表示差，0.5下表示极不适合，根据表格KMO检验的结果显示，KMO的值为0.516，主成分分析程度为不适合。因此我们建立以下模型：
+
+ Lasso 回归（Least Absolute Selection and Shrinkage Operator）是一种替代最小二乘法的压缩估计方法。在Lasso回归中，模型的目标函数被修改为最小化残差平方和加上一个与模型参数绝对值相关的正则化项，这个正则化项通常是一个常数乘以所有模型参数绝对值的总和。假设数据 \[X{i}  (i \in \{1, 2, \ldots, 24\}),Y{i}\]分别是第 i 个个体的个人及财务等信息指标及其违约与否情况。考虑线性回归模型：
+
+$$
+Y_i=\alpha_i+\sum_{j=1}^{\infty} \beta_j x_{i j}+\varepsilon_i, \quad \varepsilon_i \sim N\left(0, \sigma^2\right)
+$$
+在通常的回归结构中,通过修改目标函数来引入正则化项,假设观测值彼此独立,或者Yi在观测值给定的情况下独立,即Yi关于Xi 条件独立,同时假设xij是标准化的,也就是
+\begin{equation}
+\frac{1}{n} \sum_j x_{i j}=0, \frac{1}{n} \sum_j x_{i j}^2=1
+\end{equation}
+Lasso回归的目标函数为：
+\begin{equation}
+\begin{aligned}
+(\hat{\alpha}, \hat{\beta})= & \arg \min _\beta\left\{\sum_i\left(Y_i-\alpha_i-\sum_j \beta_j x_{i j}\right)^2 + \lambda \sum\limits_j {|{\beta _j}|} \right\} \\
+& \text { s. t. } \sum_j\left|\beta_j\right| \leqslant t
+\end{aligned}
+\end{equation}
+上式中，$\beta_{j}$是第$j$个特征的系数，$\lambda$是正则化参数，代表控制惩罚的强度。$t$是一个正的调和参数,用于控制正则化的强度。是当$t$增加时,正则化项的权重增加,使得回归系数总体变小,若令\begin{equation}
+t^0=\sum_j\left|\beta_j\right|, t \leqslant t^0
+\end{equation}
+
+就会使一些回归系数缩小并趋于0,但是任一系数都不为0,回归系数的减少可以简化模型并减少过拟合，并且最终保留了所有的变量。
+
+首先通过可视化的方式给出交叉验证选择 λ 值的情况：
+\\
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{ae572784eaec7cfdad5b1814ee9215f.jpg}
+    \caption{Lasso回归交叉验证图}
+    \label{fig:enter-label}
+\end{figure}
+由于$Lasso$回归无显式解，在此采用最小角估计法进行近似求解，然后利用SPSS软件画出λ与模型回归系数图以确定主要特征，来达到降维的目的：
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1\linewidth]{56.png}
+    \caption{λ与模型回归系数图}
+    \label{fig:enter-label}
+\end{figure}
+
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+上图展示了随着λ的对数值变化，模型系数变化的情况。其中λ为Lasso回归中的惩罚系数，它控制着正则化的程度。随着横坐标参数的增大，有些指标的回归系数会逐渐向零收缩，其中 指标越不重要，自变量系数会被越早压缩为零，从而实现特征筛选和模型精简的目的。所以，我们可以通过观察曲线与横轴的交点位置来判断哪些指标的系数最后可能不为零，即哪些指标可以被选中。
+
+下面给出模型系数情况：
+\begin{table}[ht]
+\centering
+\caption{模型系数表}
+\label{tab:adf_results}
+\begin{minipage}[t]{0.45\textwidth}
+    \centering
+    \begin{tabular}{c|c|c|}
+    \hline
+       变量名 & 标准化系数 & 非标准化系数 \\
+    \hline
+        截距 & 0.659 & 0.654 \\
+        X1 & -0.093 & -0.087 \\
+        X2 & 0.006 & 0.005 \\
+        X3 & -0.046 & -0.044 \\
+        X4 & 0.001 & 0 \\
+        X5 & -0.027 & -0.019 \\
+        X6 & -0.01 & -0.007 \\
+        X7 & -0.005 & -0.008 \\
+        X8 & 0 & 0 \\
+        X9 & 0.015 & 0.014 \\
+        X10 & -0.002 & 0 \\
+        X11 & -0.008 & -0.012 \\
+        X12 & 0 & 0 \\
+    \hline
+    \end{tabular}
+\end{minipage}%
+\begin{minipage}[t]{0.45\textwidth}
+    \centering
+    \begin{tabular}{c|c|c}
+    \hline
+       变量名 & 标准化系数 & 非标准化系数 \\
+    \hline
+        X13 & 0 & 0 \\
+        X14 & 0 & 0 \\
+        X15 & 0 & -0.029 \\
+        X16 & 0.002 & 0.04 \\
+        X17 & 0 & -0.052 \\
+        X18 & 0 & 0 \\
+        X19 & 0 & 0 \\
+        X20 & 0 & 0 \\
+        X21 & 0 & -0.019 \\
+        X22 & 0 & 0 \\
+        X23 & 0 & 0 \\
+        X24 & 0 & 0 \\
+          & & &
+    \hline
+    \end{tabular}
+\end{minipage}
+\smallskip
+\end{table}
+
+
+在Lasso回归模型的系数表中，我们可以观察到一系列自变量（X1至X24）与因变量之间的线性关系。Lasso回归作为一种回归分析方法，旨在通过施加L1正则化（即绝对值的和最小化）来减少模型的复杂度，并通过系数压缩来避免过拟合问题。
+
+从标准化系数来看，截距项为0.659，表明在自变量全为0时，因变量的预测值为0.659个标准单位。然而，标准化系数更侧重于展示自变量与因变量之间的相对重要性，且已消除量纲影响。
+
+对于自变量X1至X24，大部分变量的标准化系数较小（绝对值接近0），表明这些变量对因变量的直接影响较弱。具体来说，X1、X3、X5、X6、X7、X11和X15的标准化系数均为负值，意味着这些变量的增加可能与因变量的减少有关；而X2、X9和X16的标准化系数为正值，暗示这些变量的增加可能与因变量的增加相关。然而，由于这些系数的绝对值均较小，这些关系的实际影响可能并不显著。
+
+值得注意的是，X4、X8、X10、X12、X13、X14、X17、X18、X19、X20、X22、X23和X24的标准化系数均为0，表明这些变量在Lasso回归模型中被完全压缩，即它们对因变量的影响在模型中被视为0。这可能是由于这些变量与因变量之间不存在线性关系，或者在数据集中这些变量的变异度较小。
+
+此外，非标准化系数提供了变量在原始尺度上的影响大小。然而，由于各变量的量纲可能不同，非标准化系数的直接比较可能不太准确。在此表中，一些非标准化系数（如X15和X17）与标准化系数存在差异，这可能是由于数据标准化过程中均值和标准差的影响。
+
+利用Lasso回归模型求解后，我们共得到了11条标准化系数较大的指标，而其它的13条数据标准化系数均为0，因此我们选取标准化系数相对较大的11条指标来建立信用风险评价模型。
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{1.png}
+    \caption{问题一模型结果图}
+    \label{fig:enter-label}
+\end{figure}
+
+
+
+
+
+
+
+\subsection{问题二模型的建立和求解}
+\subsubsection{数据预处理}
+
+对于问题二，我们首先根据问题一的结果去除了冗余的指标，并且对剩余指标进行归一化处理（下表展示归一化结果），从而使信用评分体系准确化。
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{cccc}
+\hline
+        0	&X2&	X3&	X4\\
+\hline
+0	&0.029411765&	1	&0.054945055\\
+0.333333333	&0.647058824	&0.5&	0.318681319\\
+1	&0.117647059	&1&0.104395604\\
+0	&0.558823529&	0.5&	0.423076923\\
+0	&0.294117647	&0.75&	0.258241758\\
+1&	0.470588235&	0.5&	0.489010989\\
+1	&0.294117647&	0.5&	0.142857143\\
+0.333333333&	0.470588235&	0.5&	0.368131868\\
+1	&0.117647059&	0.5	&0.159340659\\
+0.333333333	&0.382352941	&1&	0.274725275\\
+\hline
+    \end{tabular}
+    \caption{数据归一化处理(部分)}
+    \label{tab:my_label}
+\end{table}
+
+\subsubsection{BP神经网络模型的建立与求解}
+\begin{itemize}
+   \item
+BP神经网络是一种多层的前馈神经网络，其主要的特点是：信号是前向传播的，而误差是反向传播的。对于如下的只含一个隐含层的神经网络模型：
+
+BP神经网络的过程主要分为两个阶段，第一阶段是信号的前向传播，算出预测误差$E$，第二阶段是误差的反向传播，$FI(j)$是隐含层j激活函数的导数，用于计算出$w_{j}$的调整值$dw_{j}$。系统的学习速率设为β，使用以下公式更新{\bf{w}}：
+\begin{equation}
+\begin{aligned}
+\centering
+{\bf{w}} = {\bf{w}} + {\bf{dw}} + {\bf{\beta}}*{\bf{d}}{{\bf{w}}^T}
+\end{aligned}
+\end{equation}
+BP神经网络的学习规则是使用最速下降法，以一个三层BP神经网络举例：
+\end{itemize}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\linewidth]{44.png}
+    \caption{BP神经网络原理图}
+    \label{fig:enter-label}
+\end{figure}
+
+
+
+隐含层的输出量设为$F_{j}$，输出层的输出变量设为$O_{k}$， 系统的激励函数设为 $G$，则其三个层之间有如下数学关系：
+\begin{equation}
+\left\{\begin{array}{l}
+F_j=G\left(\sum_{i=1}^m \omega_{i j} x_i+a_j\right) \\
+O_k=\sum_{j=1}^l sigmiod(F_j)\omega_{j k}+b_k
+\end{array}\right.
+\end{equation}
+其中，
+\begin{equation}
+\begin{aligned}
+\centering
+& sigmoid(F_{j}) = c\frac{1}{{1 + {e^{ - {F_j}}}}}\\
+\end{aligned}
+\end{equation}
+系统期望的输出量设为$T_{k}$，则系统的误差E可由实际输出值和期望目标值的方差表示，具体关系表达式如下：
+\begin{equation}
+\begin{aligned}
+\centering
+& E=\frac{1}{2} \sum_{k=1}^n\left(T_k-O_k\right)^2 \\
+\end{aligned}
+\end{equation}
+
+
+
+
+
+
+
+
+
+并令，利用梯度下降原理， 则系统权值和偏置的更新公式如下：
+\begin{equation}
+\\
+& \left\{\begin{array}{l}
+\omega_{i j}=\omega_{i j}+\beta F_j\left(1-F_j\right) x_i \sum_{k=1}^n \omega_{j k} e_k \\
+\omega_{j k}=\omega_{j k}+\beta F_j e_k
+\end{array}\right. \\
+\end{equation}
+\begin{equation}
+& \left\{\begin{array}{l}
+a_j=a_j+\beta F_j\left(1-F_j\right) x_i \sum_{k=1}^n \omega_{j k} e_k \\
+b_k=b_k+\beta e_k
+\end{array}\right. \\
+&
+\end{equation}
+本模型采用德国信用评估样本的70\%作为训练集，30\%作为预测集，进行10次训练，$LOSS(ii)$定义为第$ii$次训练的训练集的误差和。下面是对于各个主要的标准化后变量对于违约与否的预测占比比重以及预测的信用得分：
+
+在BP神经网络分类的混淆矩阵热力图测试结果中，呈现了BP神经网络模型的分类表现。首先，观察矩阵结构，我们可以看到三个类别的预测结果分布，其中主对角线元素表示模型正确分类的情况，副对角线元素则体现了分类错误的情况。
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1\linewidth]{i.png}
+    \caption{热力图}
+    \label{fig:enter-label}
+\end{figure}
+第一行第一列的元素“1.0”表示模型正确地将所有真实标签为第一类（假设为“A”类）的样本识别为该类，即真正例（True Positive, TP）为1，假负例（False Negative, FN）为0。这反映了模型在“A”类上的高识别准确率。
+
+第二行揭示了模型在第二类（假设为“B”类）上的分类表现。其中，第二行第二列的元素“196”表示模型正确地将196个真实标签为“B”类的样本识别为该类，即TP为196。然而，第二行第一列的元素“23”表明有23个真实标签为“A”类的样本被错误地分类为“B”类，即假正例（False Positive, FP）为23。这显示了模型在区分“A”类和“B”类时存在一定的混淆。
+
+第三行数据反映了模型在第三类（假设为“C”类）上的分类性能。第三行第三列的元素“43”表示模型正确地将43个真实标签为“C”类的样本识别为该类，即TP为43。同时，第三行第二列的元素“38”表明有38个真实标签为“B”类的样本被错误地分类为“C”类，即FP为38。这表明模型在“B”类和“C”类之间的区分能力相对一般，存在一些误判。
+我们可以进一步计算出模型的性能指标，如准确率、精确率、召回率和F1分数等。准确率是所有样本中正确分类的比例，精确率是预测为正样本的实例中真正为正样本的比例，召回率是实际为正样本的实例中被预测为正样本的比例，而F1分数是精确率和召回率的调和平均值。
+
+我们可以看出该BP神经网络分类模型在大部分样本上能够做出准确的分类，但在“A”类和“B”类之间存在一定的混淆。为了提高模型的分类性能，可以考虑进一步调整模型参数、优化特征选择或采用更复杂的网络结构等方法。同时，对于不平衡数据集的情况，还需要考虑采取相应策略来平衡各类别之间的样本数量，以提高模型在少数类样本上的分类性能。
+
+\\
+
+\\
+\\
+\begin{table}[h]
+    \centering
+    \caption{BP神经网络（德国）}
+\begin{tabular}{ccccc}
+ \hline
+      & 准确率   & 召回率   & 精确率   & F1    \\
+       \hline
+训练集   & 0.77  & 0.77  & 0.76  & 0.759 \\
+交叉验证集 & 0.753 & 0.753 & 0.742 & 0.737 \\
+测试集   & 0.797 & 0.797 & 0.787 & 0.79 \\
+ \hline
+ 
+\end{tabular}
+\end{table}
+\vspace{1cm}    在评估BP神经网络分类模型的性能时，关键指标包括准确率、召回率、精确率和F1分数。这些指标提供了模型在不同数据集上表现的综合评价。 首先，观察训练集的结果，模型达到了0.77的准确率，同时召回率和精确率也接近该值，显示出模型在训练数据上具有较好的分类性能。然而，高训练集性能并不一定代表模型在未见过的数据上也能有同样好的表现，因此还需要关注交叉验证集和测试集的结果 在交叉验证集上，模型的准确率为0.753，略低于训练集，但整体仍表现出较好的分类能力。召回率与准确率一致，表明模型在识别正样本方面较为稳定。然而，精确率略低于召回率，这可能意味着模型在预测为正样本的实例中，有一部分实际上是负样本，即存在一定的误报。F1分数综合了召回率和精确率的信息，为0.737，进一步证实了模型在交叉验证集上的性能。 在测试集上，模型表现最佳，准确率达到0.797，高于训练集和交叉验证集。这一结果表明模型在未见过的数据上也具有较好的泛化能力。同时，召回率、精确率和F1分数也均有所提升，特别是F1分数达到0.79，说明模型在精确性和召回性之间取得了较好的平衡。 
+\\
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{3.png}
+    \caption{BP神经网络示意图}
+    \label{fig:enter-label}
+\end{figure}
+\begin{table}[]
+    \centering
+\begin{tabular}{lllll}
+\hline
+预测结果Y & 原始Y& 预测结果概率\_1 & 预测结果概率\_0 & 信用得分     \\
+\hline
+1     & 0                           & 0.59557245  & 0.40442755  & 40.4 \\
+1     & 0                           & 0.761093687 & 0.238906313 & 23.9 \\
+0     & 0                           & 0.039909007 & 0.960090993 & 96   \\
+0     & 0                           & 0.035786542 & 0.964213458 & 96.4 \\
+0     & 0                           & 0.197439209 & 0.802560791 & 80.3 \\
+0     & 0                           & 0.14283909  & 0.85716091  & 85.7 \\
+1     & 0                           & 0.582540408 & 0.417459592 & 41.7 \\
+0     & 0                           & 0.059662346 & 0.940337654 & 94   \\
+0     & 0                           & 0.466747079 & 0.533252921 & 53.3 \\
+1     & 1                           & 0.55523787  & 0.44476213  & 44.5 \\
+1     & 0                           & 0.575047076 & 0.424952924 & 42.5 \\
+1     & 1                           & 0.812330157 & 0.187669843 & 18.8\\ \hline
+\end{tabular}
+ \caption{信用得分(部分)}
+    \label{tab:my_label}
+\end{table}
+
+
+\subsection{问题三模型的建立和分析}
+\subsubsection{模型的建立和求解}
+\begin{itemize}
+   \item
+   BP神经网络（澳大利亚）：
+   \end{itemize}
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{4.png}
+    \caption{热力图（澳大利亚）}
+    \label{fig:enter-label}
+\end{figure}
+在BP神经网络分类的混淆矩阵热力图测试结果中，所展示的数据揭示了模型在不同类别间的分类表现。首先，观察矩阵结构，我们可以看到三个类别的预测结果分布，其中对角线元素表示模型正确分类的情况，非对角线元素则揭示了分类错误的情况。
+
+第一行第一列的元素“1.0”表示模型正确地将所有真实标签为第一类（假设为“A”类）的样本识别为该类，即真正例（True Positive, TP）为1，假负例（False Negative, FN）为0。这反映了模型在“A”类上的高识别准确率。
+
+第二行揭示了模型在第二类（假设为“B”类）上的分类表现。其中，第二行第二列的元素“108”表示模型正确地将108个真实标签为“B”类的样本识别为该类，即TP为108。然而，第二行第一列的元素“16”表明有16个真实标签为“A”类的样本被错误地分类为“B”类，即假正例（False Positive, FP）为16。这显示了模型在区分“A”类和“B”类时存在一定的混淆。
+
+第三行数据反映了模型在第三类（假设为“C”类）上的分类性能。第三行第三列的元素“79”表示模型正确地将79个真实标签为“C”类的样本识别为该类，即TP为79。同时，第三行第二列的元素“5”表明有5个真实标签为“B”类的样本被错误地分类为“C”类，即FP为5。这表明模型在“B”类和“C”类之间的区分能力相对较好，但仍存在少量误判。
+
+在分析了澳大利亚的信用数据集之后我们可以进一步得到模型的性能指标，我们不难发现，在模型的训练集上，模型的准确率、召回率等指标达到了0.85上下，可见模型对于训练集的数据分类效果相对较好。从测试集来看，该模型的性能出现了提升，其各项参数指标达到了0.9上下，相比其他模型的性能有着较为优异的表现，因此BP神经网络模型的性能更为优越。
+\\
+
+\begin{table}[H]
+\centering
+ \caption{BP神经网络（澳大利亚）}
+\begin{tabular}{ccccc}
+\hline
+ & 准确率   & 召回率   & 精确率   & F1    \\
+\hline
+训练集   & 0.846 & 0.846 & 0.848 & 0.847 \\
+交叉验证集 & 0.844 & 0.844 & 0.849 & 0.845 \\
+测试集   & 0.899 & 0.899 & 0.906 & 0.9  \\
+\hline
+\end{tabular}
+\end{table}
+\begin{itemize}
+   \item
+   
+决策树（澳大利亚）：
+\end{itemize}
+
+在利用决策树模型对于澳大利亚数据集进行分析时，我们发现该模型在训练集上的准确率、召回率、精确率和F1值均达到了1的水平，说明在训练过程中，该模型有着极佳的拟合能力。但是，同其他类模型一样，该模型在测试集上的性能评估参数出现了下降，其三个参数位于0.83上下，F1参数更是下降到了0.83之下，说明了该模型的性能在测试集的性能出现了明显下滑，因此，决策树模型的性能差于BP神经网络模型。
+\begin{figure}
+    \centering
+    \includegraphics[width=0.75\linewidth]{6.png}
+    \caption{决策树（澳大利亚）}
+    \label{fig:enter-label}
+\end{figure}
+\\
+\\
+\begin{table}[H]
+\centering
+ \caption{决策树（澳大利亚）}
+\begin{tabular}{ccccc}
+\hline
+ & 准确率   & 召回率   & 精确率   & F1    \\
+\hline
+训练集   & 1 & 1& 1& 1 \\
+测试集   & 0.83& 0.833 & 0.836 & 0.824  \\
+\hline
+\end{tabular}
+\end{table}
+
+\\
+\begin{itemize}
+   \item
+KNN（澳大利亚）:
+\end{itemize}
+\begin{table}[H]
+\centering
+ \caption{KNN（澳大利亚）}
+\begin{tabular}{ccccc}
+\hline
+ & 准确率   & 召回率   & 精确率   & F1    \\
+\hline
+训练集   & 0.9 & 0.9& 0.9& 0.9 \\
+测试集   & 0.856& 0.856 & 0.856 & 0.855  \\
+\hline
+\end{tabular}
+\end{table}
+
+在分类任务中，给定一个新样本 \( \mathbf{x} \)，通过以下步骤来预测其类别：
+
+计算新样本 \( \mathbf{x} \) 与训练集中所有样本之间的距离。
+选择距离最近的 \( K \) 个样本。
+这 \( K \) 个最近邻样本中，出现次数最多的类别即为新样本的预测类别。
+假设第 \( k \) 个最近邻样本的类别为 \( y_k \)，则新样本 \( \mathbf{x} \) 的预测类别 \( \hat{y} \) 为：
+\[ \hat{y} = \arg\max_{c \in C} \sum_{k=1}^{K} \mathbb{I}(y_k = c) \]
+其中，\( C \) 是所有可能类别的集合，\( \mathbb{I}(\cdot) \) 是指示函数，当括号内的条件为真时取值为 1，否则为 0。\\
+
+在使用K近邻（KNN）模型对于澳大利亚的信用数据集分析后，我们发现K近邻（KNN）分类模型在训练集和测试集的效果有所不同。模型在训练数据上能够很好地拟合数据，模型的准确率、召回率、精确率和F1得分均高达0.9，并且对于正负样本的识别能力较强。然而，当模型于测试集上应用时，性能出现了一定程度的下降，准确率、召回率、精确率和F1得分均降至0.856左右，其中F1得分为0.855。但是，我们注意到KNN模型的性能受K值选择的影响较大。且该模型易受到噪声的影响以及容易忽略数据的局部结构。由此看来，KNN模型的准确率低于BP神经网络模型的准确率。
+\\
+\\
+\begin{itemize}
+   \item
+支持向量机SVM（澳大利亚）:
+\end{itemize}
+\begin{table}[H]
+\centering
+ \caption{支持向量机（澳大利亚）}
+\begin{tabular}{ccccc}
+\hline
+ & 准确率   & 召回率   & 精确率   & F1    \\
+\hline
+训练集   & 0.857 & 0.857& 0.857& 0.867 \\
+测试集   & 0.851& 0.851 & 0.866 & 0.851  \\
+\hline
+\end{tabular}
+\end{table}
+\\
+
+在使用支持向量机（SVM）模型对于澳大利亚的信用数据集分析后，我们从模型评估结果中发现，该模型虽然在训练集和测试集上均取得了相近的性能指标且显示出了模型的稳定性和泛化能力。但是由于模型训练的复杂度随着数据量的增大而增大，因此在增大数据量之后，模型的性能出现了下降。在数据分析过程中，由于数据指标较为高维，支持向量机模型的求解速度明显慢于其他几类模型。从图表来看，支持向量机模型在训练集和测试集上均达到了0.85以上的准确率，但该模型的准确率仍然低于BP神经网络所得到的准确率。
+\\
+\begin{itemize}
+   \item
+随机森林（澳大利亚）:
+\end{itemize}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{3.png}
+    \caption{特征重要性}
+    \label{fig:enter-label}
+\end{figure}
+
+\\
+\begin{table}[H]
+\centering
+ \caption{随机森林（澳大利亚）}
+\begin{tabular}{ccccc}
+\hline
+ & 准确率   & 召回率   & 精确率   & F1    \\
+\hline
+训练集   & 0.961 & 0.961& 0.961& 0.961 \\
+测试集   & 0.841& 0.841 & 0.841 & 0.841  \\
+\hline
+\end{tabular}
+\end{table}
+
+
+在使用随机森林模型对于澳大利亚的信用数据集分析后，我们观察到训练集和测试集的性能指标有所差异，这体现了模型在未见数据上的泛化能力。在训练集上，准确率、召回率、精确率和F1值均高达0.961，表明模型在拟合训练数据时表现优异，能够准确地将样本分类到其对应的类别。但是该模型在测试集上的这些指标均下降至0.841，说明了模型在面对新数据时性能有所下降。
+
+对于这种性能下降（或称为过拟合）的情况，我们考虑是由于模型训练过程较为复杂，导致它过于关注训练数据中的一些特定细节，而忽略了数据的一般规律。我么不难发现虽然随机森林分类模型在训练集上表现出色，但在测试集上存在明显的性能下降情况，泛化能力受到限制，分类的准确度和可信度难以得到保障，模型的性能也落后于BP神经网络模型。
+\\
+
+\begin{table}[H]
+\centering
+ \caption{澳大利亚信用数据集分类方法对比结果}
+\begin{tabular}{ccccc}
+
+\hline
+      & Accuracy & AUC & Type1-error & Type2-error \\
+      \hline
+你们的模型 &0.899&        0.926&     0.067&  0.033             \\
+DT    &0.83&    0.8095   &    0.120 &   0.091                 \\
+KNN   &0.856&          0.8805& 0.082    & 0.063            \\
+RF    &0.851&          0.9252& 0.077 &  0.072                 \\
+SVM   &0.841&          0.8756&    0.029 & 0.120                       \\
+\hline
+\end{tabular}
+    \label{fig:enter-label}
+\end{table}	
+
+
+
+
+\begin{itemize}
+   \item
+   BP神经网络（德国）：
+   \end{itemize}
+   
+在利用BP神经网络模型对德国信用数据集进行分析后，我们注意到模型在训练集上的准确率、召回率、精确率和F1等指标均达到了0.76到0.77，可见该模型在训练数据拟合时具有相对较好的性能，再看测试集的相关数据，我们发现测试集上的模型评估参数得到了一定的提升，准确率、召回率等参数均达到了0.79-0.80的水平，很好地避免了过拟合的问题，因此，BP神经网络模型的性能优于其他分类模型。
+
+\\
+\\
+\begin{table}[H]
+    \centering
+     \caption{BP神经网络（德国）}
+\begin{tabular}{ccccc}
+ \hline
+      & 准确率   & 召回率   & 精确率   & F1    \\
+       \hline
+训练集   & 0.77  & 0.77  & 0.76  & 0.759 \\
+交叉验证集 & 0.753 & 0.753 & 0.742 & 0.737 \\
+测试集   & 0.797 & 0.797 & 0.787 & 0.79 \\
+ \hline
+\end{tabular}
+\end{table}
+\\
+\begin{itemize}
+   \item
+决策树（德国）:
+\end{itemize}
+在使用决策树模型对于德国的信用数据集分析后，我们注意到该模型在训练集上的准确率、召回率、精确率以及F1的值均达到了0.87上下的水平，说明该决策树模型对于训练过程中的数据拟合效果较好，但是其在测试集上的准确率等指标均有大幅度下降，保持在0.7上下的大小，说明该模型在测试集的性能有了明显下降，因此该模型的性能差于BP神经网络模型。
+\begin{figure}
+    \centering
+      
+    \includegraphics[width=1\linewidth]{9.png}
+    \label{fig:enter-label}
+      \caption{决策树（德国）}
+\end{figure}
+
+\\
+\\
+\\\begin{table}[H]
+\centering
+ \caption{决策树（德国）}
+\begin{tabular}{ccccc}
+\hline
+ & 准确率   & 召回率   & 精确率   & F1    \\
+\hline
+训练集   & 0.873 &0.873& 0.871& 0.869\\
+测试集   & 0.703& 0.703 & 0.69 & 0.694  \\
+\hline
+\end{tabular}
+\end{table}
+
+
+\\
+\begin{itemize}
+   \item
+KNN（德国）:
+\end{itemize}
+在使用K近邻（KNN）模型对于德国的信用数据集分析后，我们发现K近邻分析模型在训练集和测试集的效果同样存在差异。在训练集中，KNN模型的准确率、召回率、精确率和F1得分均达到了0.8，能够相对较好地拟合数据。但在测试集中，我们注意到KNN模型的各项参数均未达到0.8，因此，KNN模型在信用评分的准确性上低于BP神经网络模型。
+\\
+
+\\\begin{table}[H]
+\centering
+ \caption{KNN（德国）}
+\begin{tabular}{ccccc}
+\hline
+ & 准确率   & 召回率   & 精确率   & F1    \\
+\hline
+训练集   & 0.811 &0.811& 0.805& 0.801\\
+测试集   & 0.733& 0.733 & 0.718 & 0.72  \\
+\hline
+\end{tabular}
+\end{table}
+
+
+\\
+\begin{itemize}
+   \item
+支持向量机（德国）:
+\end{itemize}
+在使用支持向量机（SVM）模型对于德国的信用数据集分析后，我们从模型评估结果看出该模型在训练集和测试集上的性能也存在一定的不同，但该模型不同于其他几类模型的是，其准确率、召回率等评估参数在测试集上均高于训练集。我们对于其在测试集上的表现可以看出，其准确率、召回率、精确率和F1值浮动在0.75至0.78范围内，这一大小可以反映出该模型对于数据的拟合效果较好，但仍然低于BP神经网络模型
+\\
+
+\\\begin{table}[H]
+\centering
+ \caption{支持向量机（德国）}
+\begin{tabular}{ccccc}
+\hline
+ & 准确率   & 召回率   & 精确率   & F1    \\
+\hline
+训练集   & 0.751 &0.751& 0.734& 0.729\\
+测试集   & 0.773& 0.773 & 0.764 & 0.758  \\
+\hline
+\end{tabular}
+\end{table}
+\\
+\begin{itemize}
+   \item
+随机森林（德国）:
+\end{itemize}
+在使用随机森林模型对于德国的信用数据集进行分析后，我们观察到该模型在训练集和测试集的性能表现存在着显著的区别。在训练集上，该模型的准确率、召回率、精确率和F1值均高于0.9，说明该模型在进行拟合训练的时候表现优异，但是在测试集上这些指标均出现了明显的下降，各项指标均在0.8以下，说明该模型在对未知数据进行拟合时性能有所下降。虽然随机森林在训练时性能优异，但最终得到的测试数据可信度和准确度较低，模型的性能同样低于BP神经网络模型。
+\\
+\begin{figure}
+    \centering
+      
+    \includegraphics[width=1\linewidth]{99.png}
+    \label{fig:enter-label}
+      \caption{随机森林（德国）}
+\end{figure}
+\\\begin{table}[H]
+\centering
+ \caption{随机森林（德国）}
+\begin{tabular}{ccccc}
+\hline
+ & 准确率   & 召回率   & 精确率   & F1    \\
+\hline
+训练集   & 0.909 &0.909& 0.916& 0.904\\
+测试集   & 0.77& 0.77 & 0.76 & 0.754  \\
+\hline
+\end{tabular}
+\end{table}
+
+
+\begin{table}[H]
+\centering
+ \caption{德国信用数据集分类方法对比结果}
+\begin{tabular}{ccccc}
+
+\hline
+      & Accuracy & AUC & Type1-error & Type2-error \\
+      \hline
+你们的模型 &    0.797 &       0.802& 0.143       & 0.733        \\
+DT    &       0.703&           0.6463& 0.177      & 0.120        \\
+KNN   &       0.733&     0.7239& 0.177        & 0.090            \\
+RF    &       0.773&     0.7735& 0.173       &0.060             \\
+SVM   &       0.77&     0.6546&  0.167       &0.060            \\
+\hline
+\end{tabular}
+    \label{fig:enter-label}
+\end{table}	
+
+\subsection{问题四模型的建立和分析}
+\subsubsection{模型的建立与求解}
+ 信用评级方程是信用评级模型的核心，而信用评级方程的权重系数直接影响着个人信用等级的划分结果。构建非线性规划模型的核心思想在于通过最大化违约与非违约客户间信用得分的离散度差异，逆向求解出各评价指标的最优权重组合。
+ 
+根据中华人民共和国金融行业标准《信贷市场与银行间债券市场信用评级规范第2部分:信用评级业务规范》(JR/T 0030. 2-2006),其将企业信用等级划分为9个等级包括AAA、AA、A、BBB、BB、B、CCC、CC 以及 C 级。$^{[2]}$本文参照此标准将个人信用等级划分为9个等级。
+ 
+参照现有研究将个人$j$的违约概率$PD_{j}$转化为信用得分$^{[1]}$，转换公式如下：
+\begin{equation}
+{s_j} = 650 + 50*{\log _2}[(1 - P{D_j})/P{D_j}]
+\end{equation}
+\begin{figure}[b]
+    \centering
+    \includegraphics[width=0.52\linewidth]{非违约率与信用得分.png}
+    \label{fig:enter-label}
+      \caption{信用率与信用得分}
+\end{figure}
+设$DIS$为违约与非违约客户平均信用得分的距离，$n_{0}$用来表示非违约客户的户数，${\bf{W}} = ({w_1},{w_1},{w_1}, \ldots ,{w_n})$为第$j$个指标的权重，$P_i^0({\bf{W}})$为权重向
+量${\bf{W}}$条件下第i个非违约客户的信用得分;$P_i^1({\bf{W}})$为权重向量${\bf{W}}$条件下第i个违约客户的信用得分.$\varphi (P_i^0({\bf{W}}))$为$n_{0}$户非违约客户信用得分的标准差，类似有$(P_i^1({\bf{W}}))$为$n_{0}$户违约客户信用得分的标准差。
+\begin{equation}
+DIS = \frac{{\sum\limits_{i = 1}^{{n_0}} {\frac{{P_i^0({\bf{W}})}}{{{n_0}}} - } \sum\limits_{i = 1}^{{n_1}} {\frac{{P_i^1({\bf{W}})}}{{{n_0}}}} }}{{\sqrt {\varphi (P_i^0({\bf{W}}))\varphi (P_i^1({\bf{W}}))} }}
+\end{equation}
+其中：
+\begin{equation}
+\varphi (P_i^0({\bf{W}})) = \sqrt {\frac{1}{{{n_0}}}\sum\limits_1^{{n_0}} {{{(P_i^0({\bf{W}}) - \sum\limits_1^{{n_0}} {P_i^0({\bf{W}})/{n_0}} )}^2}} } 
+\end{equation}
+\begin{equation}
+\varphi (P_i^1({\bf{W}})) = \sqrt {\frac{1}{{{n_1}}}\sum\limits_1^{{n_1}} {{{(P_i^1({\bf{W}}) - \sum\limits_1^{{n_1}} {P_i^1({\bf{W}})/{n_1}} )}^2}} } 
+\end{equation}
+式(11)的分子越大，分母越小，区分程度D越大，违约客户与非违约客户的信用得分交叠越少，信用得分越能够区分违约与非违约客户。
+通过各信用等级对应的证据权重值$WOE$反映等级内违约与非违约客户的个数关系。将所有客户按信用得分由高到低排列后,划分为多个等级。设e为信用等级,则各信用等级对应的$WOE_{e}$值为$^{[3]}$：
+\begin{equation}
+WO{E_{\rm{e}}} = \ln (\frac{{M_e^1 + 1}}{{{n_1}}}/\frac{{M_e^0 + 1}}{{{n_0}}})
+\end{equation}
+
+其中，${M_e^1}$为等级$e$内违约人数，${M_e^0}$为等级$e$内非违约人数,为了保证第$e$个等级与第$e-1$个等级之间差异最大化，设$WOE$与$DIS$的影响因子相等，则目标函数可以化简为：
+\begin{equation}
+obj\max \sum\limits_{e = 1}^n {(WO{E_e} - WO{E_{e - 1}})+DIS= \max (WO{E_9} - WO{E_1})+DIS}
+\end{equation}
+约束条件为：
+\begin{equation}
+\begin{array}{l}
+s.t.\sum\limits_{j = 1}^n {{w_j}} \\
+{w_j} > 0,j = 1,2,3, \ldots ,n
+\end{array}
+\end{equation}
+\begin{equation}
+WO{E_e} - WO{E_{e - 1}} > 0,e = 2, \ldots ,n
+\end{equation}
+
+类似于《基于违约鉴别能力最大的信用等级划分方法》的信用等级划分$^{[4]}$，按照“信用等级越高、损失率越低，信用风险越低”的划分标准，得到划分结果如下表：
+\begin{table}[H]
+    \centering
+    \begin{tabular}{cccc}
+\hline
+信用等级&得分区间&损失率(\%)&人数\\
+\hline
+AAA	&[987.59,-]&0.01&0\\
+AA	&[905.73,987.59]&0.05&26\\
+A	&[887.60,905.73]&0.16&19\\
+BBB	&[822.21,887.60]&	0.23&140\\
+BB	&[804.00,822.21]&0.80&59\\
+B   &[780.69,804.00]&	1.23&77\\
+CCC	&[699.46,780.69]&	1.35&289\\
+CC  &[331.99,699.46]&	10.10&390\\
+C   &[0 ,331.99]&66.90&0\\
+
+\hline
+    \end{tabular}
+    \caption{信用等级划分结果}
+    \label{tab:my_credit}
+\end{table}
+
+\section{模型的评价}
+
+\subsection{模型的优点}
+
+
+1.  多模型综合应用：论文中综合使用了Lasso回归模型、BP神经网络模型等，在信用风险评价中克服了多重共线性、过度拟合等问题，并且突破了传统线性预测的壁垒，增强了模型预测的准确性和可解释性；
+
+
+2.  模型具有较强的自适应性和鲁棒性，可以通过训练对数据的规律和本质进行自动学习，不需要过多的人工干预来设定复杂的规则或特征，并且对数据中的噪声和不理想值具有一定的容忍能力，能给出相对较好的结果；
+
+3. 很好的泛化能力：模型可以自行识别冗余特征值并进行剔除，降低了计算复杂度和数据存储需求，以达到降维的目的，从而选出信用评价的关键指标，提高了对数据的预测能力。
+
+\subsection{模型的缺点}
+1.容易陷入局部最优解：在对复杂的信用风险数据进行训练时，由于初始权重的设置等原因，BP神经网络可能会收敛到局部最小点，而不是全局最优解，不同初始权值会导致不同收敛结果，可能会使模型性能不佳。；
+
+2. 参数选择影响：例如Lasso回归模型的正则化参数λ需要通过交叉验证等方式谨慎选择，BP神经网络的训练比例与训练速率也需要慎重考虑，选择不当可能会影响模型性能。
+
+3.模型实际上可能会剔除一些对结果有贡献的特征指标，影响到最终对信用评估的准确性。
+\newpage
+
+\begin{thebibliography}{99}
+\addcontentsline{toc}{section}{参考文献}
+\bibitem[1] 梅子行,毛鑫宇. 智能风控———Python金融风险管理与评分卡建模[M]. 北京: 机械工业出版社,2020
+\bibitem[2]中华人民共和国金融行业标准(JR/T0030.2-2006)《信贷市场和银行间债券市场信用评级规范》
+\bibitem[3] Abdou H. A. Genetic Programming for Credit Scoring: The Case of Egyptian Public Sector Banks[J]. Expert Systems with Appli cations, 2009,36(9):11402-11417
+\bibitem[4]李航．统计学习方法．北京：清华大学出版社，2012：第七章，pp.95-135
+\bibitem[5] Scientific Platform Serving for Statistics Professional 2021. SPSSPRO. (Version 1.0.11)[Online Application Software]. Retrieved from https://www.spsspro.com.
+\bibitem[6] 周志华. 机器学习[M]. 清华大学出版社, 2016.
+\end{thebibliography}
+\newpage
+
+\begin{appendices}
+
+\section*{}
+
+\textbf{\textcolor[rgb]{0.65,0.35,0.10}{python程序一}}
+\lstinputlisting[language=python]{./code/np3.py}
+
+\textcolor[rgb]{0.65,0.35,0.10}{\textbf{matlab程序二BP神经网络}}
+\lstinputlisting[language=Matlab]{./code/bp神经网络.m}
+
+\textcolor[rgb]{0.65,0.35,0.10}{\textbf{matlab程序三}}
+\lstinputlisting[language=Matlab]{./code/问题三代码.m}
+
+
+%%\textcolor[rgb]{0.65,0.35,0.10}{\textbf{matlab程序四}}
+%%\lstinputlisting[language=Matlab]{./code/mcmthesis-matlab1.m}
+\end{appendices}
+\end{document}
