@@ -1,7 +1,7 @@
 //#ifndef __JINGZOU_H
 #define __JINGZOU_H
 #include "led.h"
-#include "delay.h"
+//#include "delay.h"
 #include "sys.h"
 #include "exit.h" 
 

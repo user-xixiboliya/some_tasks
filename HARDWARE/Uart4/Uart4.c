@@ -4,6 +4,7 @@
 #include "dance.h"
 #include "stm32f10x.h"
 #include "jingzou.h"
+#include "Usart3.h"
 //蓝牙
 
 
@@ -73,7 +74,7 @@ void UART4_IRQHandler(void)                	//串口4中断服务程序
 			Res = USART_ReceiveData(UART4);	//读取接收到的数据
 			USART_SendData(UART4,Res);
 			while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送完毕
-		delay_ms(100);
+			delay_ms(50);
 		}
 		if(Res=='1')
 			{
@@ -92,43 +93,43 @@ void UART4_IRQHandler(void)                	//串口4中断服务程序
 			}
 			else if(Res=='4')//二维码
 			{	
-				guizhong();
+				gostraight_while_slightly_turn_left();
 				USART_SendData(UART4,Res);
 			}
-			else if(Res=='5')//越障
-			{	
-				yuezhang2();
-				guizhong();
-				qibu2();
-				USART_SendData(UART4,Res);
-			}
-			else if(Res=='6')//原地左转
-			{	
-				yuandizuo2();
-				qibu2();
-				USART_SendData(UART4,Res);
-			}
-			else if(Res=='7')//原地右转
-			{	
-				yuandiyou();
-				qibu2();
-				USART_SendData(UART4,Res);
-			}
-			else if(Res=='8')//直道左转
-			{	
-				zuozhuanzhi();
-				//yuandizuo2();
-				USART_SendData(UART4,Res);
-				//f=1;
-			}
-			else if(Res=='9')//直道右转
-			{	
-        //youzhuanzhi();
-				//yuandiyou();
-				USART_SendData(UART4,Res);
-				ceshi();
-				//f=1;
-			}
+//			else if(Res=='5')//越障
+//			{	
+//				yuezhang2();
+//				guizhong();
+//				qibu2();
+//				USART_SendData(UART4,Res);
+//			}
+//			else if(Res=='6')//原地左转
+//			{	
+//				yuandizuo2();
+//				qibu2();
+//				USART_SendData(UART4,Res);
+//			}
+//			else if(Res=='7')//原地右转
+//			{	
+//				yuandiyou();
+//				qibu2();
+//				USART_SendData(UART4,Res);
+//			}
+//			else if(Res=='8')//直道左转
+//			{	
+//				zuozhuanzhi();
+//				//yuandizuo2();
+//				USART_SendData(UART4,Res);
+//				//f=1;
+//			}
+//			else if(Res=='9')//直道右转
+//			{	
+//        //youzhuanzhi();
+//				//yuandiyou();
+//				USART_SendData(UART4,Res);
+//				ceshi();
+//				//f=1;
+//			}
 			a=0;
 	}
 	

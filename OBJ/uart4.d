@@ -41,3 +41,4 @@
 ..\obj\uart4.o: ..\HARDWARE\LobotSerialServo\LobotSerialServo.h
 ..\obj\uart4.o: ..\HARDWARE\jingzou\jingzou.h
 ..\obj\uart4.o: ..\HARDWARE\EXIT\exit.h
+..\obj\uart4.o: ..\HARDWARE\Usart3\Usart3.h
