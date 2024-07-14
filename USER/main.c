@@ -13,7 +13,6 @@
 #include "Uart4.h"
 #include "Usart3.h"
 #include "jingzou.h"
-
 #include "stm32f10x.h"
 #include <stdio.h>
 
@@ -22,6 +21,7 @@ u8 sj=0;
 u8 i=0;
 u8 j=0;
 u8 a=0;
+extern u8 Res;
 int main(void)
  {
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2); 
@@ -44,108 +44,23 @@ int main(void)
 	//qibu();
   while(1)
 	{
-	delay_ms(3000);
-//	 USART_SendData(UART4,'0');
-//	 USART_SendData(USART1,'0');
-//		USART_SendData(USART3,'0');
-		if(a==0)
+		USART_SendData(USART3,Res);
+    if(Res == '1')
 		{
-			//guizhong();
+		zoulu();
 		}
-		//qibu1();
-		else if(a==1)
+		else if(Res=='2')
 		{
-			zouluend();
+		zuozhuan();
 		}
-		else if(a==2)
+		else if(Res == '3')
 		{
-			zuozhuanend();
+		youzhuan();
 		}
-		else if(a==3)
+		else if(Res == '4')
 		{
-			youzhuanend();
+		gostraight_while_slightly_turn_left();
 		}
-		
-		/*
-		if(bt==1) 
-		{
-			zoulu10();
-		}
-		else if(bt==2) 
-		{
-			zuozhuan6();
-		}
-		else if(bt==3)
-		{
-			youzhuan5();
-		}
-		else if(bt==4)
-		{
-			guizhong();
-      //delay_ms(3000);
-		}
-		else if(bt==5)
-		{
-			guizhong();
-			yuezhang();
-		}*/
-	/*	if(bt==0) 
-		{
-			LED1=0;
-			LED0=0;
-			qibu();
-			//zoulu6();
-		}
-		//zoulu10 µÚÒ»²½
-		else if(bt==1) 
-		{
-			LED1=1;
-			LED0=1;
-			zoulu9();
-			
-			//zoulu6();
-		}
-		else if(bt==2)
-		{
-			LED1=0;
-			LED0=0;
-			guizhong();
-			//zuozhuan2();
-		}
-		//zoulu3();
-		//youzhuan();
-		//zuozhuan2();
-		else if(bt==3)
-		{
-			LED1=1;
-			LED0=0;
-			zuozhuan6();
-			//zuozhuan2();
-		}
-		else if(bt==4)
-		{
-			LED1=0;
-			LED0=1;
-			youzhuan4();
-		}
-		else if(bt==5)
-		{
-			LED1=1;
-			LED0=1;
-			zoulu10();
-		}
-		else if(bt==6)
-		{
-			LED1=1;
-			LED0=1;
-			zuozhuan6();
-		}
-		else if(bt==7)
-		{
-			LED1=1;
-			LED0=1;
-			youzhuan5();
-		}
-		*/
 	}
+	
  }

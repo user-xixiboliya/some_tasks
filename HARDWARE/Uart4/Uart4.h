@@ -10,7 +10,7 @@
 	  	
 extern u8  USART4_RX_BUF[USART4_REC_LEN]; //接收缓冲,最大USART_REC_LEN个字节.末字节为换行符 
 extern u16 USART4_RX_STA;         		//接收状态标记	
-
+extern u8 Res;
 void Uart4_init(u32 bound);
 void Uart4_Printf(const char *buf);
 void USART4_IRQHandler(void) ;
